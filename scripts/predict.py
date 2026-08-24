@@ -27,8 +27,12 @@ u = {k: float(np.atleast_1d(v)[0]) for k, v in p.uniformity(mu).items()}
 ring = float(p._prep(a.z1, a.z2, a.z3, a.ring)[0, 3])
 ext = float(p.extrapolation_score(a.z1, a.z2, a.z3)[0])
 
-print(f"\n입력 압력 : Zone1={a.z1}  Zone2={a.z2}  Zone3={a.z3}  "
-      f"Ring={ring:.2f}{'' if a.ring is not None else ' (자동 보간)'} psi")
+if p.needs_ring:
+    tag = "" if a.ring is not None else " (미입력 -> 존 압력에서 자동 보간)"
+    ringtxt = f"  Ring={ring:.2f}{tag}"
+else:
+    ringtxt = "   (이 모델은 링 압력을 사용하지 않습니다)"
+print(f"\n입력 압력 : Zone1={a.z1}  Zone2={a.z2}  Zone3={a.z3} psi{ringtxt}")
 print(f"모델 CV   : RMSE {p.cv_['rmse']:.1f} A/min ({p.cv_['mape']:.1f}%)")
 if ext > 0.3:
     print(f"[경고] 학습 설계점에서 {ext:.2f} psi 떨어진 외삽 영역입니다. 예측 신뢰도가 낮습니다.")

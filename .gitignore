@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 reports/*.npy
 reports/benchmark.log
+reports/fixedpred_*.npy

@@ -46,11 +46,12 @@ ax.grid(alpha=.3); ax.legend()
 fig.tight_layout(); fig.savefig(FIG / "02_influence_functions.png", dpi=130)
 
 # ------------------------------------------------------- 3. CV 예측 vs 실측
-best = M.SymmetryRidge
-space = dict(alpha=[0.01, .1, 1, 3, 10, 30, 100], feat=["zone", "zone+ring", "quad", "quad+ring", "phys"],
-             rank=[0, 1, 2, 3], alpha_a=[0.1, 1, 10], smooth=[0.0])
-pred, chosen = nested_cv(best, space, P, Y, r, d.design_groups(), inner_groups=d.design_groups())
-print("LOGO-CV RMSE =", round(rmse(Y, pred), 1))
+import json
+cfg = json.load(open("reports/best_config.json"))
+best = getattr(M, cfg["model"])
+space = {k: [v] for k, v in cfg["params"].items()}          # 확정 설정으로 CV
+pred, _ = nested_cv(best, space, P, Y, r, d.design_groups(), inner_groups=d.design_groups())
+print(f"최종 모델 {cfg['model']} {cfg['params']}  LOGO-CV RMSE = {rmse(Y, pred):.1f}")
 
 sel = [0, 6, 8, 9, 12, 15, 17, 20]
 fig, axes = plt.subplots(2, 4, figsize=(16, 7), sharex=True)

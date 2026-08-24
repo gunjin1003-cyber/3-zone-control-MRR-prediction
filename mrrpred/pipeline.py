@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from . import models as M
+from .models import uses_ring
 from .cv import nested_cv, rmse
 from .data import CMPData
 
@@ -63,6 +64,11 @@ class MRRPredictor:
         else:
             rg = np.broadcast_to(np.asarray(ring, float), (len(z),))
         return np.c_[z, rg]
+
+    @property
+    def needs_ring(self) -> bool:
+        """현재 모델이 링 압력을 입력으로 쓰는지."""
+        return uses_ring(self.params.get("feat", "zone"))
 
     def predict(self, z1, z2, z3, ring=None) -> np.ndarray:
         """(n,R) 예측 MRR 프로파일."""

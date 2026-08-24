@@ -1,0 +1,10 @@
+{
+  "model": "SymmetryRidge",
+  "params": {
+    "alpha": 1,
+    "feat": "quad",
+    "rank": 1,
+    "alpha_a": 1,
+    "smooth": 0.0
+  }
+}

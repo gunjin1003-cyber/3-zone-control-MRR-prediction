@@ -1,0 +1,24 @@
+I+ PLS (정밀)              design   183.7 | wafer   177.1 | center   44.7 mid   93.3 edge   361.2 |  13.9s
+Q. 저계수 능형회귀              design   178.6 | wafer   167.1 | center   49.1 mid   88.3 edge   350.3 |  30.3s
+N+ 대칭성 능형(정밀)            design   177.9 | wafer   166.6 | center   48.9 mid   85.1 edge   349.8 | 181.3s
+R. 대칭성 + PLS             design   182.5 | wafer   176.4 | center   44.0 mid   90.3 edge   359.8 |  49.2s
+
+N+ 대칭성 능형(정밀)  (LOGO 177.9)  선택 빈도:
+   13x  {"alpha": 1, "alpha_a": 1, "feat": "quad", "rank": 1, "smooth": 0.0}
+    1x  {"alpha": 1, "alpha_a": 1, "feat": "quad+ring", "rank": 1, "smooth": 0.0}
+    1x  {"alpha": 0.1, "alpha_a": 1, "feat": "quad", "rank": 1, "smooth": 0.0}
+
+Q. 저계수 능형회귀  (LOGO 178.6)  선택 빈도:
+   11x  {"alpha": 1, "feat": "quad", "rank": 4}
+    2x  {"alpha": 1, "feat": "quad", "rank": 3}
+    1x  {"alpha": 1, "feat": "quad+ring", "rank": 3}
+
+R. 대칭성 + PLS  (LOGO 182.5)  선택 빈도:
+    9x  {"alpha_a": 1.0, "feat": "quad", "n_comp": 3, "rank": 1}
+    5x  {"alpha_a": 1.0, "feat": "quad+ring", "n_comp": 3, "rank": 1}
+    1x  {"alpha_a": 1.0, "feat": "quad", "n_comp": 4, "rank": 1}
+
+I+ PLS (정밀)  (LOGO 183.7)  선택 빈도:
+   11x  {"feat": "quad+ring", "kind": "pls", "n_comp": 3}
+    3x  {"feat": "quad", "kind": "pls", "n_comp": 3}
+    1x  {"feat": "quad", "kind": "pls", "n_comp": 4}

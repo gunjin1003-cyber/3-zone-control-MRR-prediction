@@ -21,6 +21,14 @@ from sklearn.ensemble import GradientBoostingRegressor
 # --------------------------------------------------------------------------
 # 특징 변환
 # --------------------------------------------------------------------------
+RING_FEATURES = {"zone+ring", "quad+ring", "phys"}
+
+
+def uses_ring(kind: str) -> bool:
+    """해당 특징셋이 리테이너 링 압력을 실제로 사용하는가."""
+    return kind in RING_FEATURES
+
+
 def make_features(P: np.ndarray, kind: str) -> np.ndarray:
     """P=(n,4): Zone1, Zone2, Zone3, R-ring."""
     z1, z2, z3, rg = P[:, 0], P[:, 1], P[:, 2], P[:, 3]
@@ -223,7 +231,8 @@ class SklearnMulti(_Base):
                                             alpha=1e-10, n_restarts_optimizer=1,
                                             random_state=0)
         if k == "pls":
-            return PLSRegression(n_components=p.get("n_comp", 2), scale=False)
+            nc = max(1, min(p.get("n_comp", 2), self.nf_, self.n_ - 1))
+            return PLSRegression(n_components=nc, scale=False)
         if k == "mlp":
             return MLPRegressor(hidden_layer_sizes=p.get("hidden", (64, 64)),
                                 max_iter=4000, random_state=0,
@@ -233,7 +242,7 @@ class SklearnMulti(_Base):
     def fit(self, P, Y, radius=None):
         X = make_features(P, self.params["feat"])
         self.xm_, self.xs_ = X.mean(0), X.std(0) + 1e-12
-        self.nf_ = X.shape[1]
+        self.nf_, self.n_ = X.shape[1], X.shape[0]
         Xs = (X - self.xm_) / self.xs_
         self.ym_, self.ys_ = Y.mean(0), Y.std(0) + 1e-12
         self.m_ = self._make()
@@ -361,3 +370,88 @@ class RidgePlusGP(_Base):
         Xs = (X - self.xm_) / self.xs_
         S = np.column_stack([h.predict(Xs) for h in self.heads_])
         return self.base_.predict(P) + self.mu_ + S @ self.V_
+
+
+# --------------------------------------------------------------------------
+# 6. 저계수(reduced-rank) 회귀 + 대칭성 분해
+# --------------------------------------------------------------------------
+class ReducedRankRidge(_Base):
+    """능형회귀 계수행렬을 rank-q 로 절단. 43개 반경 회귀가 q개 잠재모드를 공유."""
+    name = "ReducedRankRidge"
+
+    def __init__(self, alpha=1.0, feat="zone", rank=2):
+        super().__init__(alpha=alpha, feat=feat, rank=rank)
+
+    def fit(self, P, Y, radius=None):
+        p = self.params
+        X = make_features(P, p["feat"])
+        self.xm_, self.xs_ = X.mean(0), X.std(0) + 1e-12
+        Xs = (X - self.xm_) / self.xs_
+        self.ym_ = Y.mean(0)
+        G = np.eye(Xs.shape[1]) * p["alpha"]
+        B = np.linalg.solve(Xs.T @ Xs + G, Xs.T @ (Y - self.ym_))
+        F = Xs @ B                                   # 적합값 (n,R)
+        q = min(int(p["rank"]), min(F.shape))
+        U, s, Vt = np.linalg.svd(F, full_matrices=False)
+        Pq = Vt[:q].T @ Vt[:q]                       # rank-q 사영
+        self.B_ = B @ Pq
+        return self
+
+    def predict(self, P):
+        X = make_features(P, self.params["feat"])
+        return self.ym_ + ((X - self.xm_) / self.xs_) @ self.B_
+
+
+class SymmetryPLS(_Base):
+    """대칭/반대칭 분해 + 대칭 성분을 PLS(지도학습 저차원)로 적합."""
+    name = "SymmetryPLS"
+
+    def __init__(self, n_comp=2, feat="zone", rank=1, alpha_a=1.0):
+        super().__init__(n_comp=n_comp, feat=feat, rank=rank, alpha_a=alpha_a)
+
+    def fit(self, P, Y, radius=None):
+        p = self.params
+        r = np.asarray(radius, dtype=float)
+        self.r_ = r
+        self.pos_ = np.where(r > 0)[0]
+        self.zero_ = np.where(r == 0)[0]
+        self.neg_ = np.array([int(np.where(r == -r[i])[0][0]) for i in self.pos_])
+
+        Ys = np.c_[(Y[:, self.pos_] + Y[:, self.neg_]) / 2, Y[:, self.zero_]]
+        Ya = (Y[:, self.pos_] - Y[:, self.neg_]) / 2
+
+        X = make_features(P, p["feat"])
+        self.xm_, self.xs_ = X.mean(0), X.std(0) + 1e-12
+        Xs = (X - self.xm_) / self.xs_
+
+        nc = max(1, min(int(p["n_comp"]), Xs.shape[1], len(Xs) - 1))
+        self.pls_ = PLSRegression(n_components=nc, scale=False).fit(Xs, Ys)
+
+        q = int(p["rank"])
+        if q <= 0:
+            self.A_, self.Ba_ = None, None
+        else:
+            U, s, Vt = np.linalg.svd(Ya, full_matrices=False)
+            q = min(q, len(s))
+            self.A_ = Vt[:q]
+            Z = np.c_[np.ones(len(Xs)), Xs]
+            G = np.eye(Z.shape[1]) * p["alpha_a"]
+            G[0, 0] = 0.0
+            self.Ba_ = np.linalg.solve(Z.T @ Z + G, Z.T @ (Ya @ self.A_.T))
+        return self
+
+    def predict(self, P):
+        X = make_features(P, self.params["feat"])
+        Xs = (X - self.xm_) / self.xs_
+        S = np.asarray(self.pls_.predict(Xs)).reshape(len(P), -1)
+        m = len(self.pos_)
+        Ys, Y0 = S[:, :m], S[:, m:]
+        if self.A_ is not None:
+            Ya = (np.c_[np.ones(len(Xs)), Xs] @ self.Ba_) @ self.A_
+        else:
+            Ya = np.zeros_like(Ys)
+        out = np.zeros((len(P), len(self.r_)))
+        out[:, self.pos_] = Ys + Ya
+        out[:, self.neg_] = Ys - Ya
+        out[:, self.zero_] = Y0
+        return out
