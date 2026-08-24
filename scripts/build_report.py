@@ -81,8 +81,9 @@ body {{
 header {{
   border-bottom:1px solid var(--line);
   background:var(--surface);
-  padding:56px 0 40px; margin-bottom:56px;
+  padding:56px 0 44px; margin-bottom:56px;
 }}
+header .wrap {{ padding-bottom:0; }}
 .eyebrow {{
   font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.16em;
   text-transform:uppercase; color:var(--accent); font-weight:500;
