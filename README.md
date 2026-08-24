@@ -131,6 +131,7 @@ fold마다 내부 CV로 하이퍼파라미터를 다시 고르는, 선택 편향
 | PCA + 가우시안과정 | 191.2 | 188.8 |
 | 가우시안과정 다출력 | 202.2 | 194.0 |
 | 커널능형회귀 (RBF) | 220.4 | 207.3 |
+| 랜덤포레스트 | 227.0 | 195.1 |
 | 반경별 로그(곱셈형) | 192.5 | 188.6 |
 
 3.1의 163과 3.2의 178이 다른 이유는 **하이퍼파라미터 선택 자체가 오차를 만들기
@@ -253,7 +254,22 @@ python scripts/optimize.py --mode profile --target-csv target.csv
 
 ---
 
-## 7. 구조
+## 7. 재현
+
+```bash
+python scripts/eda.py                  # 데이터 구조 진단 (노이즈 하한, 존-반경 대응, PCA)
+python scripts/benchmark_fixed.py      # 표 3.1 — 하이퍼파라미터 고정 비교 (~1분)
+python scripts/benchmark.py            # 표 3.2 — 18종 중첩 CV (~1시간, 트리 계열이 느림)
+python scripts/benchmark2.py           # 선두 모델군 정밀 비교 (~5분)
+python scripts/stress_extrapolation.py # 표 3.3 — 외삽 스트레스
+python scripts/select_config.py        # 배포 하이퍼파라미터 확정
+python scripts/make_figures.py         # figures/ 진단 그림
+python scripts/build_report.py out.html  # 결과를 단일 HTML 리포트로
+```
+
+---
+
+## 8. 구조
 
 ```
 mrrpred/
@@ -267,5 +283,10 @@ scripts/
   train.py          최종 학습
   predict.py        압력 → 프로파일 CLI
   optimize.py       목표 → 압력 역탐색
-  make_figures.py   진단 그림
+  benchmark_fixed.py     하이퍼파라미터 고정 비교 + 부트스트랩 SE
+  benchmark2.py          선두 모델군 정밀 비교
+  stress_extrapolation.py 저압/고압군 상호 예측
+  select_config.py       배포 하이퍼파라미터 확정
+  make_figures.py        진단 그림
+  build_report.py        단일 HTML 리포트 빌드
 ```
