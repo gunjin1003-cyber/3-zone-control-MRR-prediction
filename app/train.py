@@ -16,6 +16,7 @@ from mrr_model import (QuadRidgeMRR, WIWNU_BANDS, cross_validate,  # noqa: E402
 ap = argparse.ArgumentParser(description="Quad Ridge MRR 모델 학습")
 ap.add_argument("--csv", default="data/Train_2.csv")
 ap.add_argument("--out", default="app/model.json")
+ap.add_argument("--label", default=None, help="앱 화면에 표시할 데이터셋 이름")
 ap.add_argument("--alpha", type=float, default=None,
                 help="지정하지 않으면 교차검증으로 자동 선택")
 a = ap.parse_args()
@@ -80,7 +81,8 @@ for name in WIWNU_BANDS:
 model = QuadRidgeMRR(alpha).fit(pressure, mrr, radius)
 model.sigma_ = (mrr - cv_pred).std(0)          # 반경별 예측 불확실도
 model.cv_ = {"rmse": cv_rmse, "mape": mape, "alpha": alpha,
-             "n_wafer": int(len(wafer_id)), "source": str(a.csv)}
+             "n_wafer": int(len(wafer_id)), "source": str(a.csv),
+             "label": a.label or Path(a.csv).stem}
 model.save(a.out)
 print(f"\n저장 완료 : {a.out}")
-print(f"실행      : python app/predict.py 2.0 2.2 2.0")
+print(f"실행      : python app/predict.py 2.0 2.2 2.0 --model {a.out}")

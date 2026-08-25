@@ -27,13 +27,16 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  # noqa: E402
                                                NavigationToolbar2Tk)
 from matplotlib.figure import Figure  # noqa: E402
 
-MODEL_PATH = Path(__file__).with_name("model.json")
+import argparse
+_ap = argparse.ArgumentParser(description="MRR 예측기 GUI")
+_ap.add_argument("--model", default=str(Path(__file__).with_name("model.json")))
+MODEL_PATH = Path(_ap.parse_args().model)
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("SiO₂ CMP  3-Zone 압력 → MRR Profile / WIWNU")
+        self.title(f"SiO₂ CMP  3-Zone 압력 → MRR Profile / WIWNU   [{MODEL_PATH.name}]")
         self.geometry("1120x740")
         self.minsize(940, 640)
 
@@ -61,7 +64,7 @@ class App(tk.Tk):
                   font=("", 13, "bold")).pack(anchor="w", pady=(0, 2))
         cv = self.model.cv_
         ttk.Label(left, foreground="#666",
-                  text=f"학습 웨이퍼 {cv.get('n_wafer', 0)}장 · "
+                  text=f"{cv.get('label', '')} · 학습 웨이퍼 {cv.get('n_wafer', 0)}장 · "
                        f"CV RMSE {cv.get('rmse', 0):.0f} A/min").pack(anchor="w", pady=(0, 12))
 
         self.var = {}

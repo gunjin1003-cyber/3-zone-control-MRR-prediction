@@ -673,6 +673,7 @@
   "mape": 6.110276098695434,
   "alpha": 1.0,
   "n_wafer": 18,
-  "source": "data/Train_2.csv"
+  "source": "data/Train_2.csv",
+  "label": "Train_2"
  }
 }

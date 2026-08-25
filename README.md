@@ -5,8 +5,10 @@ MRR 데이터(`data/Train_1.csv`)로 학습하여, **압력을 입력하면 MRR 
 예측**하는 도구입니다.
 
 > **바로 쓸 프로그램을 찾는다면 → [`app/`](app/) 폴더**
-> `app/mrr_app.html` 을 브라우저로 열면 설치 없이 압력 → MRR Profile / WIWNU 가 나옵니다.
-> 명령줄은 `python app/predict.py 2.0 2.2 2.0`, GUI 는 `python app/gui.py`.
+> `app/mrr_app_train1.html` (21장 학습) 또는 `app/mrr_app.html` (18장 학습) 을 브라우저로
+> 열면 설치 없이 압력 → MRR Profile / WIWNU 가 나옵니다.
+> 명령줄은 `python app/predict.py 2.0 2.2 2.0`, GUI 는 `python app/gui.py`,
+> 두 모델 비교는 `python app/compare.py`.
 > 자세한 사용법은 [app/README.md](app/README.md).
 
 아래는 "어떤 모델이 가장 강력한가" 를 18종 비교로 검증한 연구 기록입니다.
