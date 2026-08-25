@@ -3,3 +3,4 @@ __pycache__/
 reports/*.npy
 reports/benchmark.log
 reports/fixedpred_*.npy
+!app/model.json

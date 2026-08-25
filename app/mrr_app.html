@@ -1,0 +1,369 @@
+<title>MRR Profile Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
+<style>
+:root{
+  --ground:#E9EDF1; --surface:#FFFFFF; --sunken:#DFE5EB;
+  --line:#CBD5DE; --line-soft:#E1E7EC;
+  --ink:#0F1720; --ink-2:#33414F; --muted:#5C6A78;
+  --accent:#A8481F; --accent-soft:#F2E2D9;
+  --data:#166F8C; --band5:#B8791A; --band7:#9B2C2C;
+  --warn-bg:#FBEEE6; --warn-ink:#8A3B14;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#131B23; --sunken:#0A0F14;
+    --line:#26333D; --line-soft:#1C262E;
+    --ink:#E4ECF2; --ink-2:#BAC7D2; --muted:#8593A1;
+    --accent:#DD8256; --accent-soft:#33201A;
+    --data:#57B4D2; --band5:#E0A94E; --band7:#E07A72;
+    --warn-bg:#2A1B13; --warn-ink:#E8A97F;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#131B23; --sunken:#0A0F14;
+  --line:#26333D; --line-soft:#1C262E;
+  --ink:#E4ECF2; --ink-2:#BAC7D2; --muted:#8593A1;
+  --accent:#DD8256; --accent-soft:#33201A;
+  --data:#57B4D2; --band5:#E0A94E; --band7:#E07A72;
+  --warn-bg:#2A1B13; --warn-ink:#E8A97F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:26px 22px 60px}
+header{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:22px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--accent);font-weight:500}
+h1{font-size:clamp(21px,2.6vw,27px);margin:6px 0 0;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin-top:5px;
+  font-family:"IBM Plex Mono",monospace}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);padding:20px}
+.card h2{font-size:13px;margin:0 0 14px;font-weight:600;letter-spacing:.02em}
+.zone{margin-bottom:16px}
+.zlab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.zname{font-size:13px;font-weight:600}
+.zdesc{font-size:11px;color:var(--muted)}
+.zrow{display:flex;gap:10px;align-items:center}
+input[type=range]{flex:1;accent-color:var(--data);height:22px}
+input[type=number]{width:74px;padding:6px 8px;border:1px solid var(--line);
+  background:var(--sunken);color:var(--ink);font-family:"IBM Plex Mono",monospace;
+  font-size:13px;text-align:right;border-radius:2px}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;
+  margin-top:2px}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-left:3px solid var(--accent);
+  padding:10px 12px;font-size:12px;margin-top:14px;display:none}
+.warn.on{display:block}
+.btnrow{display:flex;gap:8px;margin-top:16px}
+button{flex:1;padding:9px 10px;border:1px solid var(--line);background:var(--sunken);
+  color:var(--ink);font-family:inherit;font-size:12.5px;cursor:pointer;border-radius:2px}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line-soft);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--sunken)}
+td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+.nu{font-weight:600;font-size:14px}
+.tag{display:inline-block;width:9px;height:9px;margin-right:7px;vertical-align:1px}
+.chartbox{background:var(--surface);border:1px solid var(--line);padding:14px}
+canvas{width:100%;height:auto;display:block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  border:1px solid var(--line);background:var(--surface);margin-top:22px}
+.stat{padding:14px 16px;border-right:1px solid var(--line-soft)}
+.stat:last-child{border-right:0}
+.sk{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted)}
+.sv{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;margin-top:3px;
+  font-variant-numeric:tabular-nums}
+.sv small{font-size:11px;font-weight:400;color:var(--muted);margin-left:3px}
+details{margin-top:22px;background:var(--surface);border:1px solid var(--line)}
+summary{padding:12px 18px;cursor:pointer;font-size:13px;font-weight:600}
+.tblwrap{max-height:340px;overflow:auto;border-top:1px solid var(--line-soft)}
+footer{margin-top:26px;font-size:11.5px;color:var(--muted);
+  font-family:"IBM Plex Mono",monospace;border-top:1px solid var(--line);padding-top:14px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">SiO₂ CMP · 3-Zone Pressure Control</div>
+  <h1>압력 → MRR Profile / WIWNU 예측기</h1>
+  <div class="sub" id="meta"></div>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>압력 입력 [psi]</h2>
+      <div id="zones"></div>
+      <div class="hint" id="range-hint"></div>
+      <div class="warn" id="warn"></div>
+      <div class="btnrow">
+        <button id="btn-csv">CSV 저장</button>
+        <button id="btn-reset">초기화</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>WIWNU = (표본표준편차 / 평균) × 100</h2>
+      <table>
+        <thead><tr><th>구간</th><th>범위</th><th>평균</th><th>σ</th><th>WIWNU</th></tr></thead>
+        <tbody id="nu-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="chartbox"><canvas id="cv" width="1500" height="820"></canvas></div>
+    <div class="stats" id="stats"></div>
+    <details>
+      <summary>MRR Profile 전체 값 (43점)</summary>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>r (mm)</th><th>MRR</th><th>95% 하한</th><th>95% 상한</th></tr></thead>
+          <tbody id="prof-body"></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</div>
+
+<footer id="foot"></footer>
+</div>
+
+<script>
+const M = {"radius":[74.0,73.0,72.0,71.0,70.0,68.0,66.0,64.0,62.0,60.0,55.0,50.0,45.0,40.0,35.0,30.0,25.0,20.0,15.0,10.0,5.0,0.0,-5.0,-10.0,-15.0,-20.0,-25.0,-30.0,-35.0,-40.0,-45.0,-50.0,-55.0,-60.0,-62.0,-64.0,-66.0,-68.0,-70.0,-71.0,-72.0,-73.0,-74.0],"x_mean":[1.9555555555555553,2.2722222222222226,2.1666666666666665,4.086666666666667,5.34611111111111,4.861111111111111,4.552777777777778,4.388888888888889,5.055555555555555],"x_std":[0.5123174170409335,0.42792205359326024,0.40824829046486294,2.17821537553718,2.0825682298793793,1.9688939051864836,1.9879017568948683,2.0127065494813228,1.9445714244262793],"coef":[[2754.779444444444,2222.265,1711.4183333333333,1400.03,1241.6294444444445,1117.1194444444445,1080.4527777777776,1068.252777777778,1069.3094444444446,1071.5472222222222,1075.1727777777778,1105.795,1109.2177777777777,1092.197777777778,1111.6427777777776,1138.7005555555554,1123.6766666666667,1110.5044444444445,1103.971111111111,1097.228333333333,1092.7616666666665,1088.5255555555552,1097.0055555555555,1100.9166666666665,1110.3338888888889,1127.006111111111,1118.018888888889,1101.2438888888887,1101.0500000000002,1088.7027777777778,1086.8194444444443,1077.4927777777775,1082.5433333333335,1080.8100000000002,1073.5211111111112,1074.6833333333332,1075.405,1106.4488888888889,1197.2805555555553,1313.2677777777774,1547.457777777778,1949.2366666666662,2447.555],[499.2656653245752,352.2020748471559,238.5462767345452,166.57763439479717,125.99617853232515,74.29451406658869,36.28013026023076,1.5597161054566884,-19.507174660378006,-32.25188278732388,-44.29178079007132,-38.77409250148901,-33.32718375712785,-10.624239962043006,-11.991682985959374,-13.026826883516138,-14.076432898001318,-16.4176306314028,-17.206823298135074,-12.244195775536555,-7.869757942319593,-16.709669732609587,-18.463204011790648,-17.027074428523832,-16.634523693067703,-13.711345486099551,-15.54997111850974,-17.266576491094092,-18.7108100391909,-27.38577584684505,-23.621642079259573,-28.382668665030824,-42.71125234885856,-28.300418206596536,-19.230206307285762,3.7333554682484196,27.4466408578034,64.61028433096877,103.30801929436556,131.22191093568412,164.78523106955842,240.1919300700384,388.6324502003282],[-241.3321677720974,-145.69995891920198,-98.93584038451246,-62.591231822742905,-27.09129892703393,34.589272000193354,70.45633767600222,104.13226885767371,116.59057821021797,119.29634967280907,88.65915440740669,19.159334401810266,-5.961022476882822,-12.54462320131597,-16.58549423196286,-8.04396512725606,-12.811936830178087,-5.7093619237005795,-0.817715442058912,-16.462724016867355,-17.658394445178,-17.493278659314846,-14.920807260743032,-10.569046256526853,-13.84062558647044,-9.663674345527138,-14.207407811212367,-20.546397128007538,-8.762945093878706,-19.914761930622184,-11.923908504170438,13.354642630795844,67.0121783602091,123.87652397002597,118.65806883297745,117.71432896650158,80.53101380591215,36.30502207156746,-21.938620796567402,-40.56512656458515,-65.91537154777902,-93.38573272650072,-196.81406514519017],[-83.79851903337435,-89.19400951078421,-114.69065468780269,-100.78507193897626,-58.50819510459153,-10.278818175897769,-15.642273310921501,-5.5433716580131245,13.148137711783518,26.617228614256685,71.59340267219463,114.00450994318997,142.58584220640617,111.70951585944312,113.09762529231412,109.306843503485,109.99036714164026,108.24305257943846,112.81118926141514,111.41916371474494,101.52504565854754,107.70290620388576,108.29105346342755,108.27736983082838,100.6253372909384,107.78988541580796,114.67146140066977,118.00857572350236,117.5587417692892,132.12180785473535,126.08361634671384,106.56589209031551,69.52036847294714,12.891273393561496,-1.5941330344752402,-20.414885927206562,-27.286757820871912,-36.83714725725197,-71.5741390719917,-92.14219758545786,-99.74478446255233,-86.93520374444114,-96.07402139920411],[490.02010874521204,267.86699773898624,199.80271674465396,162.49970049207897,150.1584893748382,100.16431482033461,58.65249997997728,19.9559477498943,-1.6815275721436862,-13.035628310987109,-17.756089010577615,-27.187743928083723,-18.84733426224651,-7.860948071564776,-4.962945825611252,-2.06242332139326,-5.196240413570195,-9.594143780392164,-12.022715020363146,-10.798295247721953,-6.881112273747818,-8.718413186747641,-10.51079153449336,-8.553667439204087,-3.144873868390957,-15.45182136548513,-16.588088036469355,-15.550779068103113,-18.847456452033587,-24.51372137184869,-26.954808901440657,-30.50208466952236,-24.548061735034096,-18.491860595439892,-8.306162459769942,7.9421574440622145,36.4419613825587,70.0997042053989,109.50202983459933,128.0937878076461,155.56467634493563,209.25702639662902,361.62131646059817],[-282.5757876250681,-117.84622711921855,-1.4005640298346058,34.12380305393304,32.9799859080894,53.43554319803102,79.59864992826793,92.19772128104418,96.78484479858014,78.37197926818013,33.06580083287775,-0.14931319507269197,-26.37274071075944,-31.247734609460696,-27.85036446271266,-15.344870578901768,-12.380169021748909,-12.38316575812921,-12.64916497607785,-15.897815228038088,-9.783766551584518,-8.067286077291065,-3.3746026374982114,-3.561392340820178,-11.32723335933853,-12.881814575338248,-10.884107294801481,-17.778820925032928,-6.7483270386104275,-19.016468872368293,-26.93564794037924,-3.402447261945567,44.01740094110329,92.78460201129829,98.50469231673361,90.07990899960761,77.06264083275563,50.93030109201929,44.45889633812026,42.233016179187,23.944686254406008,-68.52158033744695,-231.15279807809273],[52.08116373516454,-5.079076133425476,-37.3815892750454,-31.799082456770147,-30.30890633255713,-26.668160442030516,-23.11285427943703,-16.6275274973713,-12.567084250823209,3.7233234835277766,37.89888263202629,85.39389785344757,101.08314007245444,89.61907624259045,91.25033760231777,77.83935487182373,78.78581443362152,84.70079141538841,79.2903009664608,77.22905864182698,75.09708319504846,82.82931815080704,85.9559903624141,79.39223842281488,81.2913781086249,84.57051860555573,86.99563516054475,93.49388390837977,92.79729753246004,109.44772507906329,108.29365813408126,83.33221522587493,37.26211092807826,-17.615958992203645,-20.165555699085424,-25.769613800517508,-18.27821629228509,-11.81807420966627,-10.963115499398452,-14.303700278488629,-4.094784347158774,45.96525650421021,89.15531620628305],[199.82702150707058,157.89241935847087,128.72920441154517,101.09806320583998,64.705437530643,35.43817403645172,28.33778735566211,15.530267425014538,1.8699988129199459,3.7319911452649857,0.23546376739508817,-13.571160507910356,-30.104089946275334,-14.882715701848278,-16.145925055414363,-17.59278292194718,-15.624633269195328,-16.120142181379258,-16.6139046275162,-10.21455677981448,-4.555439823098244,-10.0661988458166,-14.094126924428599,-15.129371504738303,-10.60689392981236,-15.358716787352042,-19.463734181647514,-16.112340770001403,-22.29205997724663,-25.068837263539354,-19.90182586441658,-7.792845144167786,5.3681827084644205,21.343430444008835,25.88657600785776,41.520036688260916,45.682055946096725,56.46745744362336,71.70576044895684,83.16932236083925,97.47539988228294,119.58943341498369,176.2342567949478],[309.78762050117297,167.64522940303348,103.5748994952843,77.02150150482319,65.05004368857132,41.35818138107638,19.134090476866348,-1.5842613301106487,-10.925654246361107,-7.532239047133826,7.778852551646346,28.604730455634694,39.05951372535751,37.04551027098951,40.43046618387867,39.07586365634448,39.670960540375646,35.63519782780601,35.26964061166399,39.98654766594799,40.2340489365574,41.63909698853104,39.63619025669361,36.12359286188315,40.95024004783101,36.01606647788858,35.0342069276153,42.080052530812964,34.030417695111396,40.03899471094897,36.52399802846892,27.85884957462922,11.983354305810236,-11.252549235198442,-7.761526834733566,-1.9022185404095557,17.01546237969073,39.898278335229776,58.629991287790986,66.273458538959,83.60510870558984,133.74713036096907,256.96955777618115],[-168.01144221988952,-94.19599466277727,-49.08814792324971,-24.76123938473421,-16.089002249898584,7.0887315869567935,23.19534194916777,32.17745416734352,39.32555789465124,45.62064445030381,49.78643493754179,50.12629377760632,44.92276513297272,35.054345089351706,35.22855465016598,35.57115142407067,38.15466542435306,38.709648778866395,38.28208147326518,38.20255877775402,37.89924587896047,40.6731819188223,41.19153786656425,41.4350678777831,37.64719603059862,37.084114606328356,40.32974022980258,37.58929605258944,40.17885441952647,43.115966492266026,40.82527085091857,43.81354440389185,50.37407213456605,42.71818753113681,38.95165420690325,29.090108577281242,19.047211144317068,4.153026242927696,-10.12009673208205,-19.861392013128526,-31.022517151793675,-67.12017391090173,-129.61615891270722]],"train_pressure":[[2.0,2.0,2.0],[2.0,2.0,2.0],[2.0,2.0,2.0],[1.5,2.0,2.0],[1.5,2.0,2.0],[2.5,2.0,2.0],[2.0,1.5,2.0],[2.0,2.5,2.0],[2.0,2.0,1.5],[2.0,2.0,2.5],[1.5,2.5,2.0],[1.5,2.3,2.0],[1.3,2.3,2.0],[1.3,2.5,2.0],[1.5,2.1,2.0],[3.0,3.0,3.0],[2.8,3.0,3.0],[2.8,3.2,3.0]],"sigma":[627.6546063200781,301.50087127458073,169.17797281998688,150.27676870347273,116.26010074587515,98.68452825745291,82.94512998296783,68.16473536652687,71.78161508202665,72.94108483539537,83.29681629039699,54.856464851705645,61.16090612543885,53.23516625538269,42.419133072931096,57.995595921343586,49.890462804932206,34.810125873730236,49.526065079112534,56.226914064294085,49.338650192853976,46.569708603425845,44.238770530666244,39.6698193807851,41.315524962987034,38.593186803256216,41.37095371166203,48.94890151093989,39.646206756938454,43.49065701292168,58.370732775221434,44.84617049587696,67.756792423841,73.20986174682625,69.59881270764188,74.41038244131296,87.10271734577252,104.59291389212925,145.9463813403325,167.12185445318457,204.21957485997268,339.22041685831897,579.9295620072907],"cv":{"rmse":168.3670721995673,"mape":6.110276098695434,"alpha":1.0,"n_wafer":18,"source":"data/Train_2.csv"}};
+const LO = 1.3, HI = 3.2;
+const R = M.radius, SIG = M.sigma;
+const BANDS = [["all",74,"var(--data)"],["5mm",70,"var(--band5)"],["7mm",68,"var(--band7)"]];
+const DEF = [2.0, 2.2, 2.0];
+const ZONES = [["Zone 1","최외곽 에지"],["Zone 2","중간 링"],["Zone 3","중심"]];
+
+/* ---- 모델: 학습 때와 똑같은 2차 특징 + 표준화 + 선형결합 ---- */
+function features(z){
+  const [a,b,c] = z;
+  return [a,b,c, a*a,b*b,c*c, a*b,a*c,b*c];
+}
+function predict(z){
+  const f = features(z);
+  const out = new Array(R.length).fill(0);
+  for(let j=0;j<R.length;j++) out[j] = M.coef[0][j];          // 절편
+  for(let i=0;i<f.length;i++){
+    const s = (f[i]-M.x_mean[i])/M.x_std[i];
+    const row = M.coef[i+1];
+    for(let j=0;j<R.length;j++) out[j] += s*row[j];
+  }
+  return out;
+}
+function wiwnu(y, rmax){
+  const idx=[]; for(let i=0;i<R.length;i++) if(Math.abs(R[i])<=rmax+1e-9) idx.push(i);
+  const v = idx.map(i=>y[i]);
+  const n = v.length, mean = v.reduce((s,x)=>s+x,0)/n;
+  const sd = Math.sqrt(v.reduce((s,x)=>s+(x-mean)*(x-mean),0)/(n-1));   // 표본표준편차
+  return {n, mean, sd, nu: sd/mean*100, min:Math.min(...v), max:Math.max(...v)};
+}
+function extrapDist(z){
+  let best = Infinity;
+  for(const p of M.train_pressure){
+    const d = Math.hypot(p[0]-z[0], p[1]-z[1], p[2]-z[2]);
+    if(d<best) best=d;
+  }
+  return best;
+}
+
+/* ---- 입력 UI ---- */
+const zonesEl = document.getElementById("zones");
+const inputs = [];
+ZONES.forEach(([name,desc],i)=>{
+  const d = document.createElement("div"); d.className="zone";
+  d.innerHTML = `<div class="zlab"><span class="zname">${name}</span>
+      <span class="zdesc">${desc}</span></div>
+    <div class="zrow">
+      <input type="range" min="${(LO-0.3).toFixed(2)}" max="${(HI+0.3).toFixed(2)}"
+             step="0.01" value="${DEF[i]}" aria-label="${name} 슬라이더">
+      <input type="number" step="0.01" value="${DEF[i].toFixed(2)}" aria-label="${name} 값">
+    </div>`;
+  zonesEl.appendChild(d);
+  const [rg,nb] = d.querySelectorAll("input");
+  rg.addEventListener("input", ()=>{ nb.value = (+rg.value).toFixed(2); render(); });
+  nb.addEventListener("input", ()=>{ if(nb.value!==""){ rg.value = nb.value; render(); }});
+  inputs.push([rg,nb]);
+});
+document.getElementById("range-hint").textContent =
+  `학습 압력 범위  ${LO} ~ ${HI} psi`;
+document.getElementById("meta").textContent =
+  `학습 웨이퍼 ${M.cv.n_wafer}장 · Quad Ridge (α=${M.cv.alpha}) · ` +
+  `교차검증 RMSE ${M.cv.rmse.toFixed(1)} Å/min (${M.cv.mape.toFixed(1)}%)`;
+document.getElementById("foot").textContent =
+  `모델 ${M.cv.source} 학습 · 반경 ${R.length}점 (−74 ~ +74 mm) · ` +
+  `WIWNU all: 전 구간 / 5mm: −70~+70 / 7mm: −68~+68`;
+
+document.getElementById("btn-reset").onclick = ()=>{
+  inputs.forEach(([rg,nb],i)=>{ rg.value=DEF[i]; nb.value=DEF[i].toFixed(2); });
+  render();
+};
+
+let LAST = null;
+
+/* 저장 경로는 두 가지다.
+   - claude.ai 아티팩트로 열었을 때 : downloads 기능을 통해 저장 (뷰어가 확인)
+   - 로컬 HTML 파일로 열었을 때     : 보통의 blob 링크
+   두 환경 모두에서 동작하도록 앞의 것을 먼저 시도하고 없으면 뒤로 넘어간다. */
+let dlPromise = null;
+function getDownloads(){
+  if(!dlPromise){
+    dlPromise = (window.claude && window.claude.use)
+      ? Promise.resolve(window.claude.use("downloads")).catch(()=>null)
+      : Promise.resolve(null);
+  }
+  return dlPromise;
+}
+function buildCsv(z,y,w){
+  let s = `Zone1,${z[0]}\nZone2,${z[1]}\nZone3,${z[2]}\n\nradius_mm,MRR_pred\n`;
+  const ord = R.map((_,i)=>i).sort((a,b)=>R[b]-R[a]);
+  ord.forEach(i=> s += `${R[i]},${y[i].toFixed(4)}\n`);
+  s += `\nband,range_mm,n_points,mean,std,WIWNU_pct\n`;
+  BANDS.forEach(([nm,rm])=>{ const q=w[nm];
+    s += `${nm},-${rm} ~ +${rm},${q.n},${q.mean.toFixed(4)},${q.sd.toFixed(4)},${q.nu.toFixed(4)}\n`; });
+  return s;
+}
+function blobSave(name, text){
+  const blob = new Blob(["\ufeff"+text], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+document.getElementById("btn-csv").onclick = async ()=>{
+  if(!LAST) return;
+  const {z,y,w} = LAST;
+  const text = buildCsv(z,y,w);
+  const name = `MRR_${z[0]}_${z[1]}_${z[2]}.csv`;
+  const dl = await getDownloads();
+  if(dl){
+    try { await dl.save({filename:name, data:"\ufeff"+text}); return; }
+    catch(e){
+      if(e && e.code === "declined") return;                 // 사용자가 취소함
+      if(e && e.code === "extension_not_enabled"){            // csv 가 막힌 뷰어
+        try { await dl.save({filename:name.replace(/\.csv$/,".txt"), data:text}); return; }
+        catch(e2){ if(e2 && e2.code === "declined") return; }
+      }
+    }
+  }
+  blobSave(name, text);
+};
+
+/* ---- 그리기 ---- */
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function draw(y){
+  const cv = document.getElementById("cv"), g = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const P = {l:110, r:26, t:26, b:70};
+  g.clearRect(0,0,W,H);
+
+  const band = SIG.some(v=>v>0);
+  let ymin = Infinity, ymax = -Infinity;
+  for(let i=0;i<y.length;i++){
+    ymin = Math.min(ymin, band ? y[i]-1.96*SIG[i] : y[i]);
+    ymax = Math.max(ymax, band ? y[i]+1.96*SIG[i] : y[i]);
+  }
+  const pad = (ymax-ymin)*0.08; ymin-=pad; ymax+=pad;
+  const X = r => P.l + (r+78)/156 * (W-P.l-P.r);
+  const Y = v => H-P.b - (v-ymin)/(ymax-ymin) * (H-P.t-P.b);
+
+  g.strokeStyle = css("--line-soft"); g.lineWidth = 1.5;
+  g.fillStyle = css("--muted"); g.font = "22px 'IBM Plex Mono',monospace";
+  g.textAlign = "right"; g.textBaseline = "middle";
+  for(let k=0;k<=5;k++){
+    const v = ymin + (ymax-ymin)*k/5, yy = Y(v);
+    g.beginPath(); g.moveTo(P.l,yy); g.lineTo(W-P.r,yy); g.stroke();
+    g.fillText(Math.round(v), P.l-12, yy);
+  }
+  g.textAlign = "center"; g.textBaseline = "top";
+  for(const t of [-74,-50,-25,0,25,50,74]){
+    g.beginPath(); g.moveTo(X(t),P.t); g.lineTo(X(t),H-P.b); g.stroke();
+    g.fillText(t, X(t), H-P.b+12);
+  }
+  g.font = "24px 'IBM Plex Sans KR',sans-serif";
+  g.fillText("Radius [mm]", (P.l+W-P.r)/2, H-P.b+46);
+  g.save(); g.translate(30,(P.t+H-P.b)/2); g.rotate(-Math.PI/2);
+  g.textBaseline="middle"; g.fillText("MRR [Å/min]",0,0); g.restore();
+
+  const ord = R.map((_,i)=>i).sort((a,b)=>R[a]-R[b]);
+  if(band){
+    g.fillStyle = css("--data") + "2e";
+    g.beginPath();
+    ord.forEach((i,k)=>{ const x=X(R[i]), v=Y(y[i]+1.96*SIG[i]); k?g.lineTo(x,v):g.moveTo(x,v); });
+    [...ord].reverse().forEach(i=> g.lineTo(X(R[i]), Y(y[i]-1.96*SIG[i])));
+    g.closePath(); g.fill();
+  }
+  BANDS.slice(1).forEach(([nm,rm,col],k)=>{
+    const c = css(col.slice(4,-1));
+    g.strokeStyle = c; g.setLineDash([7,7]); g.lineWidth = 2;
+    for(const s of [rm,-rm]){ g.beginPath(); g.moveTo(X(s),P.t); g.lineTo(X(s),H-P.b); g.stroke(); }
+    g.setLineDash([]);
+    g.fillStyle = c; g.font = "19px 'IBM Plex Mono',monospace";
+    g.textAlign = "right"; g.textBaseline = "bottom";   // 아래쪽에 배치해 y축 눈금과 겹치지 않게
+    g.fillText(`${nm} ±${rm}`, X(-rm)-8, H - P.b - 8 - k*24);
+  });
+  g.strokeStyle = css("--data"); g.lineWidth = 3.2; g.beginPath();
+  ord.forEach((i,k)=>{ const x=X(R[i]), v=Y(y[i]); k?g.lineTo(x,v):g.moveTo(x,v); });
+  g.stroke();
+  g.fillStyle = css("--data");
+  ord.forEach(i=>{ g.beginPath(); g.arc(X(R[i]),Y(y[i]),4,0,7); g.fill(); });
+}
+
+/* ---- 메인 ---- */
+function render(){
+  const z = inputs.map(([rg,nb]) => {
+    const v = parseFloat(nb.value);
+    return Number.isFinite(v) ? v : 0;
+  });
+  const y = predict(z);
+  const w = {}; BANDS.forEach(([nm,rm]) => w[nm] = wiwnu(y, rm));
+  LAST = {z,y,w};
+
+  document.getElementById("nu-body").innerHTML = BANDS.map(([nm,rm,col])=>
+    `<tr><td><span class="tag" style="background:${col}"></span>${nm}</td>
+      <td>±${rm}</td><td>${w[nm].mean.toFixed(0)}</td>
+      <td>${w[nm].sd.toFixed(1)}</td>
+      <td class="nu">${w[nm].nu.toFixed(2)}%</td></tr>`).join("");
+
+  const a = w.all;
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><div class="sk">평균 MRR</div>
+      <div class="sv">${a.mean.toFixed(0)}<small>Å/min</small></div></div>
+    <div class="stat"><div class="sk">WIWNU 5mm</div>
+      <div class="sv">${w["5mm"].nu.toFixed(2)}<small>%</small></div></div>
+    <div class="stat"><div class="sk">WIWNU 7mm</div>
+      <div class="sv">${w["7mm"].nu.toFixed(2)}<small>%</small></div></div>
+    <div class="stat"><div class="sk">최소 / 최대</div>
+      <div class="sv" style="font-size:15px">${a.min.toFixed(0)} / ${a.max.toFixed(0)}</div></div>`;
+
+  const ord = R.map((_,i)=>i).sort((b,c)=>R[c]-R[b]);
+  document.getElementById("prof-body").innerHTML = ord.map(i=>
+    `<tr><td>${R[i]}</td><td>${y[i].toFixed(1)}</td>
+      <td>${(y[i]-1.96*SIG[i]).toFixed(1)}</td>
+      <td>${(y[i]+1.96*SIG[i]).toFixed(1)}</td></tr>`).join("");
+
+  const d = extrapDist(z), wEl = document.getElementById("warn");
+  if(d > 0.3){
+    wEl.className = "warn on";
+    wEl.textContent = `학습한 압력 조건에서 ${d.toFixed(2)} psi 떨어진 외삽 영역입니다. `
+      + `예측 신뢰도가 낮으니 검증 실험을 권장합니다.`;
+  } else wEl.className = "warn";
+
+  draw(y);
+}
+render();
+window.addEventListener("resize", ()=>render());
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change", ()=>render());
+</script>
